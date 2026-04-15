@@ -1,0 +1,45 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  deploy-staging:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Get commit SHA from CI
+        run: |
+          echo "COMMIT_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying image ghcr.io/${{ github.repository }}:${{ env.COMMIT_SHA }} to staging"
+
+  smoke-test:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Simulate smoke test
+        run: |
+          echo "🔍 Running smoke tests on staging..."
+          echo "✅ Smoke tests passed"
+
+  deploy-production:
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://your-app.example.com
+    steps:
+      - name: Get commit SHA
+        run: |
+          echo "COMMIT_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+      - name: Deploy to production (manual approval required)
+        run: |
+          echo "🚀 Deploying image ghcr.io/${{ github.repository }}:${{ env.COMMIT_SHA }} to production"
+          echo "✅ Production deployment completed"
