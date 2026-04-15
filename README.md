@@ -1,1 +1,1 @@
-Lab 7 is completed
+LR is completed !
